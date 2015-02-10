@@ -1,0 +1,31 @@
+{
+  "name": "dreams",
+  "version": "1.0.0",
+  "description": "Softhouse API",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src"
+  },
+  "keywords": [
+    "Softhouse",
+    "api",
+    "rest",
+    "mongodb",
+    "express"
+  ],
+  "author": "Joakim Carlstein <joakim.carlstein@softhouse.se>",
+  "license": "MIT",
+  "dependencies": {
+    "JSONStream": "^0.10.0",
+    "body-parser": "^1.11.0",
+    "compression": "^1.4.0",
+    "cors": "^2.5.3",
+    "express": "^4.11.2",
+    "lodash": "^3.1.0",
+    "method-override": "^2.3.1",
+    "mongodb": "^1.4.30",
+    "morgan": "^1.5.1",
+    "through2": "^0.6.3",
+    "underscore.string": "^3.0.3"
+  }
+}
