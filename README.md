@@ -29,13 +29,13 @@ You'll now have a dynamic REST API listening on port `3232` (or the port provide
 
 **NOTE** `<resource>` and `<relatedResource>` below should be a resource name in singular and dasherized, e.g. "user" or "continuous-integration". `<id>` should be a 24 character long hexadecimal string, i.e. a MongoDB ObjectID string.
 
-### `GET /api/<resource>`
+### `GET /api/<resource>[?query...]`
 
 Get all items of a given resource.
 
 #### Responses
 
-`200` - An array with all, or no, items in the `<resource>` collection.
+`200` - An array with all, or no, items in the `<resource>` collection, optionally filtered by provided query parameters.
 
 `500` - Something went wrong when querying the database.
 
@@ -92,13 +92,13 @@ Delete a specific item by id in a resource collection.
 `500` - The item could not be removed.
 
 
-### `GET /api/<resource>/<id>/<relatedResource>`
+### `GET /api/<resource>/<id>/<relatedResource>[?query...]`
 
 Get all related items of a given type for a specific item in a collection.
 
 #### Responses
 
-`200` - An array with all, or no, items in the `<relatedResource>` collection which belongs to the item with id `<id>` in the `<resource>` collection.
+`200` - An array with all, or no, items in the `<relatedResource>` collection which belongs to the item with id `<id>` in the `<resource>` collection, optionally filtered by provided query parameters.
 
 `500` - Something went wrong when querying the database.
 
