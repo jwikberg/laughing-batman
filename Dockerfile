@@ -10,4 +10,6 @@ ADD . /app
 
 WORKDIR /app
 
+EXPOSE 3232
+
 CMD pm2 start --name app /app/src/index.js && pm2 logs app
