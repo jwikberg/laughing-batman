@@ -1,10 +1,14 @@
 {
   "name": "dreams",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Softhouse API",
   "main": "src/index.js",
   "scripts": {
     "start": "node src"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Softhouse/laughing-batman.git"
   },
   "keywords": [
     "Softhouse",

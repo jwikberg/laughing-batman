@@ -73,6 +73,19 @@ app.post('/api/hook/:endpoint', function (req, res) {
   });
 });
 
+app.post('/api/buildqueue', function (req, res) {
+  // don't allow users to directly post to build queue:
+  res.sendStatus(404);
+});
+app.put('/api/buildqueue', function (req, res) {
+  // don't allow users to directly put to build queue:
+  res.sendStatus(404);
+});
+app.delete('/api/buildqueue', function (req, res) {
+  // don't allow users to directly delete from build queue:
+  res.sendStatus(404);
+});
+
 /**
  * Attach current resource name and collection to the request
  * from the url parameter `:resource`

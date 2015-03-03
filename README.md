@@ -29,6 +29,17 @@ You'll now have a dynamic REST API listening on port `3232` (or the port provide
 
 **NOTE** `<resource>` and `<relatedResource>` below should be a resource name in singular and dasherized, e.g. "user" or "continuous-integration". `<id>` should be a 24 character long hexadecimal string, i.e. a MongoDB ObjectID string.
 
+### `POST /api/hook/<endpoint>`
+
+Can and should be used as a GitHub push webhook to automatically add a repo to the build queue used by [flaming-computing-machine](https://github.com/Softhouse/flaming-computing-machine).
+
+**NOTE** Your repo *must* have a `Dockerfile` in its root folder!
+
+#### Responses
+
+`204` - All went well
+
+
 ### `GET /api/<resource>[?query...]`
 
 Get all items of a given resource.
