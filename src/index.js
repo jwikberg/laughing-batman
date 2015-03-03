@@ -10,6 +10,7 @@ var JSONStream = require('JSONStream');
 var bodyParser = require('body-parser');
 var compression = require('compression');
 var methodOverride = require('method-override');
+var githubWebhook = require('github-webhook-middleware');
 var schema = require('./schema');
 var pkg = require('../package');
 var MongoClient = mongodb.MongoClient;
@@ -21,7 +22,6 @@ var db;
 
 app.use(methodOverride());
 app.use(morgan('combined'));
-app.use(bodyParser.json());
 app.use(cors());
 app.use(compression());
 
@@ -40,7 +40,7 @@ app.use(function (req, res, next) {
  *
  * Adds incoming repo to build queue
  */
-app.post('/api/hook/:endpoint', function (req, res) {
+app.post('/api/hook/:endpoint', githubWebhook({secret: process.env.GITHUB_SECRET}), function (req, res) {
   var hooks = req.db.collection('_hook');
   var buildqueue = req.db.collection('buildqueue');
 
@@ -86,6 +86,8 @@ app.delete('/api/buildqueue', function (req, res) {
   // don't allow users to directly delete from build queue:
   res.sendStatus(404);
 });
+
+app.use(bodyParser.json());
 
 /**
  * Attach current resource name and collection to the request
