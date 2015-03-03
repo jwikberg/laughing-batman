@@ -1,6 +1,6 @@
 'use strict';
 var str = require('underscore.string');
-var ObjectId = require('mongodb').ObjectID;
+var ObjectID = require('mongodb').ObjectID;
 
 exports.fromObject = objToSchema;
 
