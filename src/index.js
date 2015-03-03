@@ -43,6 +43,7 @@ app.use(function (req, res, next) {
 app.post('/api/hook/:endpoint', function (req, res) {
   var hooks = req.db.collection('_hook');
   var buildqueue = req.db.collection('buildqueue');
+
   hooks.insert(req.body, function(err) {
     if (err) {
       return res.status(500).send(err);
@@ -172,6 +173,10 @@ app.post('/api/:resource', function (req, res) {
   if (!req.body) {
     return res.status(400).send();
   }
+
+  req.body.createdAt = new Date();
+  req.body.updatedAt = req.body.createdAt;
+
   req.collection.insert(req.body, {w:1}, function(err, doc) {
     if (err) {
       return res.status(500).send(err);
@@ -188,6 +193,10 @@ app.post('/api/:mainResource/:id/:resource', function (req, res) {
     return res.status(400).send();
   }
   req.body[req.parentField] = req.id;
+
+  req.body.createdAt = new Date();
+  req.body.updatedAt = req.body.createdAt;
+
   req.collection.insert(req.body, {w:1}, function(err, doc) {
     if (err) {
       return res.status(500).send(err);
@@ -205,6 +214,7 @@ app.put('/api/:resource/:id', function (req, res) {
   }
 
   delete req.body._id;
+  req.body.updatedAt = new Date();
 
   req.collection.update({_id: req.id}, req.body, {w:1}, function(err) {
     if (err) {
