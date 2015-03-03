@@ -15,6 +15,7 @@ var pkg = require('../package');
 var MongoClient = mongodb.MongoClient;
 var port = process.env.PORT || 3232;
 var app = express();
+var dbHost = process.env.MONGO_HOST || 'localhost';
 var dbName = 'inhouse';
 var db;
 
@@ -32,6 +33,44 @@ app.use(function (req, res, next) {
   // Attach database to request:
   req.db = db;
   next();
+});
+
+/**
+ * GitHub Webhook endpoint
+ *
+ * Adds incoming repo to build queue
+ */
+app.post('/api/hook/:endpoint', function (req, res) {
+  var hooks = req.db.collection('_hook');
+  var buildqueue = req.db.collection('buildqueue');
+  hooks.insert(req.body, function(err) {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    if (!req.body.ref) {
+      // Skipping hook if no ref was found (it's maybe a ping)
+      return res.sendStatus(204);
+    }
+    var build = {
+      fullName: req.body.repository.full_name,
+      name: req.body.repository.name,
+      repo: req.body.repository.clone_url,
+      commit: req.body.head_commit && req.body.head_commit.id,
+      endpoint: req.params.endpoint,
+      createdAt: new Date(),
+      buildAt: null,
+      nrOfAttempts: 0,
+      isSuccessful: false,
+      message: null,
+      pusher: req.body.pusher
+    };
+    buildqueue.insert(build, function (err) {
+      if (err) {
+        return res.status(500).send(err);
+      }
+      return res.sendStatus(204);
+    });
+  });
 });
 
 /**
@@ -114,7 +153,7 @@ app.get('/api/:mainResource/:id/:resource', function (req, res) {
 });
 
 /**
- * POST /api/:resource/:id
+ * POST /api/:resource
  */
 app.post('/api/:resource', function (req, res) {
   if (!req.body) {
@@ -231,7 +270,7 @@ app.get('/collection/:resource', function (req, res) {
 });
 
 
-MongoClient.connect('mongodb://localhost/' + dbName, function (err, database) {
+MongoClient.connect('mongodb://' + dbHost + '/' + dbName, function (err, database) {
   if (err) {
     throw err;
   }
