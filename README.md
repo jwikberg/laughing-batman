@@ -33,11 +33,15 @@ You'll now have a dynamic REST API listening on port `3232` (or the port provide
 
 Can and should be used as a GitHub push webhook to automatically add a repo to the build queue used by [flaming-computing-machine](https://github.com/Softhouse/flaming-computing-machine).
 
-**NOTE** Your repo *must* have a `Dockerfile` in its root folder!
+**NOTE** Your repo *must* have a `Dockerfile` in its root folder! Also it listens only for `master` branch pushes.
 
 #### Responses
 
-`204` - All went well
+`201` - The repo was added to the build queue
+
+`204` - Push received but ignored (e.g. push to other branch than `master`)
+
+`500` - Something went wrong when querying the database.
 
 
 ### `GET /<resource>[?query...]`

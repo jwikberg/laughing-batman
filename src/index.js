@@ -56,6 +56,10 @@ app.post('/_hook/:endpoint', githubWebhookMiddleware, function (req, res) {
       // Skipping hook if no ref was found (it's maybe a ping)
       return res.sendStatus(204);
     }
+    if (req.body.ref !== 'refs/heads/master') {
+      // Skipping hook if it's a push for something else than the master branch
+      return res.sendStatus(204);
+    }
     var build = {
       fullName: req.body.repository.full_name,
       name: req.body.repository.name,
@@ -73,7 +77,7 @@ app.post('/_hook/:endpoint', githubWebhookMiddleware, function (req, res) {
       if (err) {
         return res.status(500).send(err);
       }
-      return res.sendStatus(204);
+      return res.sendStatus(201);
     });
   });
 });
