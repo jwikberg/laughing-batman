@@ -10,7 +10,9 @@ var JSONStream = require('JSONStream');
 var bodyParser = require('body-parser');
 var compression = require('compression');
 var methodOverride = require('method-override');
-var githubWebhook = require('github-webhook-middleware');
+var githubWebhookMiddleware = require('github-webhook-middleware')({
+  secret: process.env.GITHUB_SECRET
+});
 var schema = require('./schema');
 var pkg = require('../package');
 var MongoClient = mongodb.MongoClient;
@@ -39,8 +41,10 @@ app.use(function (req, res, next) {
  * GitHub Webhook endpoint
  *
  * Adds incoming repo to build queue
+ *
+ * POST /_hook/:endpoint
  */
-app.post('/api/hook/:endpoint', githubWebhook({secret: process.env.GITHUB_SECRET}), function (req, res) {
+app.post('/_hook/:endpoint', githubWebhookMiddleware, function (req, res) {
   var hooks = req.db.collection('_hook');
   var buildqueue = req.db.collection('buildqueue');
 
@@ -72,19 +76,6 @@ app.post('/api/hook/:endpoint', githubWebhook({secret: process.env.GITHUB_SECRET
       return res.sendStatus(204);
     });
   });
-});
-
-app.post('/api/buildqueue', function (req, res) {
-  // don't allow users to directly post to build queue:
-  res.sendStatus(404);
-});
-app.put('/api/buildqueue', function (req, res) {
-  // don't allow users to directly put to build queue:
-  res.sendStatus(404);
-});
-app.delete('/api/buildqueue', function (req, res) {
-  // don't allow users to directly delete from build queue:
-  res.sendStatus(404);
 });
 
 app.use(bodyParser.json());
@@ -125,145 +116,32 @@ app.param('id', function (req, res, next, id) {
 });
 
 /**
- * GET /api/:resource
+ * GET /_collection
  */
-app.get('/api/:resource', function (req, res) {
-  req.collection.find(req.query, function(err, cursor) {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    cursor.stream()
-      .pipe(JSONStream.stringify())
-      .pipe(res);
-  });
-});
-
-/**
- * GET /api/:resource/:id
- */
-app.get('/api/:resource/:id', function (req, res) {
-  req.collection.findOne({_id: req.id}, function(err, doc) {
-    if (err) {
-      return res.status(500).send(err);
-    } else if (!doc) {
-      return res.sendStatus(404);
-    }
-    res.status(200).send(doc);
-  });
-});
-
-/**
- * GET /api/:mainResource/:id/:resource
- */
-app.get('/api/:mainResource/:id/:resource', function (req, res) {
-  var filter = req.query;
-  filter[req.parentField] = req.id;
-  req.collection.find(filter, function(err, cursor) {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    cursor.stream()
-      .pipe(JSONStream.stringify())
-      .pipe(res);
-  });
-});
-
-/**
- * POST /api/:resource
- */
-app.post('/api/:resource', function (req, res) {
-  if (!req.body) {
-    return res.status(400).send();
-  }
-
-  req.body.createdAt = new Date();
-  req.body.updatedAt = req.body.createdAt;
-
-  req.collection.insert(req.body, {w:1}, function(err, doc) {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.status(200).send(doc && doc[0]);
-  });
-});
-
-/**
- * POST /api/:mainResource/:id/:resource
- */
-app.post('/api/:mainResource/:id/:resource', function (req, res) {
-  if (!req.body) {
-    return res.status(400).send();
-  }
-  req.body[req.parentField] = req.id;
-
-  req.body.createdAt = new Date();
-  req.body.updatedAt = req.body.createdAt;
-
-  req.collection.insert(req.body, {w:1}, function(err, doc) {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.status(200).send(doc && doc[0]);
-  });
-});
-
-/**
- * PUT /api/:resource/:id
- */
-app.put('/api/:resource/:id', function (req, res) {
-  if (!req.body) {
-    return res.status(400).send();
-  }
-
-  delete req.body._id;
-  req.body.updatedAt = new Date();
-
-  req.collection.update({_id: req.id}, req.body, {w:1}, function(err) {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    res.sendStatus(204);
-  });
-});
-
-/**
- * DELETE /api/:resource/:id
- */
-app.delete('/api/:resource/:id', function (req, res) {
-  req.collection.remove({_id: req.id}, {single: true, w:1}, function(err, nrOfRemoved) {
-    if (err) {
-      return res.status(500).send(err);
-    } else if (nrOfRemoved === 0) {
-      return res.sendStatus(404);
-    }
-    res.sendStatus(204);
-  });
-});
-
-/**
- * GET /collection
- */
-app.get('/collection', function (req, res) {
+app.get('/_collection', function (req, res) {
   db.collectionNames(function (err, collections) {
     if (err) {
       return res.status(500).send(err);
     }
-    res.status(200).send(
-      collections.filter(function (collection) {
-        return collection.name.indexOf(dbName + '.') === 0 &&
-               collection.name.indexOf('.system.') < 0;
-      })
-      .map(function (collection) {
-        return collection.name.slice(8);
-      })
-    );
+
+    var dbRegExp = new RegExp('^' + dbName + '\\.');
+
+    collections = collections.reduce(function (collections, collection) {
+      var name = collection.name.replace(dbRegExp, ''); // strip dbName
+      if (name.indexOf('system.') < 0 && name.indexOf('_') !== 0) { // system and private collections
+        collections.push(name);
+      }
+      return collections;
+    }, []);
+
+    res.status(200).send(collections);
   });
 });
 
 /**
- * GET /collection/:resource
+ * GET /_collection/:resource
  */
-app.get('/collection/:resource', function (req, res) {
+app.get('/_collection/:resource', function (req, res) {
   req.collection.count(function (err, count) {
     if (err) {
       return res.status(500).send(err);
@@ -291,6 +169,122 @@ app.get('/collection/:resource', function (req, res) {
           });
         });
     });
+  });
+});
+
+/**
+ * GET /:resource
+ */
+app.get('/:resource', function (req, res) {
+  req.collection.find(req.query, function(err, cursor) {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    cursor.stream()
+      .pipe(JSONStream.stringify())
+      .pipe(res);
+  });
+});
+
+/**
+ * GET /:resource/:id
+ */
+app.get('/:resource/:id', function (req, res) {
+  req.collection.findOne({_id: req.id}, function(err, doc) {
+    if (err) {
+      return res.status(500).send(err);
+    } else if (!doc) {
+      return res.sendStatus(404);
+    }
+    res.status(200).send(doc);
+  });
+});
+
+/**
+ * GET /:mainResource/:id/:resource
+ */
+app.get('/:mainResource/:id/:resource', function (req, res) {
+  var filter = req.query;
+  filter[req.parentField] = req.id;
+  req.collection.find(filter, function(err, cursor) {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    cursor.stream()
+      .pipe(JSONStream.stringify())
+      .pipe(res);
+  });
+});
+
+/**
+ * POST /:resource
+ */
+app.post('/:resource', function (req, res) {
+  if (!req.body) {
+    return res.status(400).send();
+  }
+
+  req.body.createdAt = new Date();
+  req.body.updatedAt = req.body.createdAt;
+
+  req.collection.insert(req.body, {w:1}, function(err, doc) {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    res.status(200).send(doc && doc[0]);
+  });
+});
+
+/**
+ * POST /:mainResource/:id/:resource
+ */
+app.post('/:mainResource/:id/:resource', function (req, res) {
+  if (!req.body) {
+    return res.status(400).send();
+  }
+  req.body[req.parentField] = req.id;
+
+  req.body.createdAt = new Date();
+  req.body.updatedAt = req.body.createdAt;
+
+  req.collection.insert(req.body, {w:1}, function(err, doc) {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    res.status(200).send(doc && doc[0]);
+  });
+});
+
+/**
+ * PUT /:resource/:id
+ */
+app.put('/:resource/:id', function (req, res) {
+  if (!req.body) {
+    return res.status(400).send();
+  }
+
+  delete req.body._id;
+  req.body.updatedAt = new Date();
+
+  req.collection.update({_id: req.id}, req.body, {w:1}, function(err) {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    res.sendStatus(204);
+  });
+});
+
+/**
+ * DELETE /:resource/:id
+ */
+app.delete('/:resource/:id', function (req, res) {
+  req.collection.remove({_id: req.id}, {single: true, w:1}, function(err, nrOfRemoved) {
+    if (err) {
+      return res.status(500).send(err);
+    } else if (nrOfRemoved === 0) {
+      return res.sendStatus(404);
+    }
+    res.sendStatus(204);
   });
 });
 
