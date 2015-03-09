@@ -44,7 +44,7 @@ app.use(function (req, res, next) {
  *
  * POST /_hook/:endpoint
  */
-app.post('/_hook/:endpoint', githubWebhookMiddleware, function (req, res) {
+app.post('/_hook/:endpoint?', githubWebhookMiddleware, function (req, res) {
   var hooks = req.db.collection('_hook');
   var buildqueue = req.db.collection('buildqueue');
 
