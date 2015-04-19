@@ -48,6 +48,11 @@ Can and should be used as a GitHub push webhook to automatically add a repo to t
 
 Get all items of a given resource.
 
+Supports:
+
+- **sort**=name,-create_at // - will sort desc, otherwise asc
+- **limit**=10 // or any specific number
+- **skip**=5 // or any specific number.
 #### Responses
 
 `200` - An array with all, or no, items in the `<resource>` collection, optionally filtered by provided query parameters.
@@ -110,6 +115,12 @@ Delete a specific item by id in a resource collection.
 ### `GET /<resource>/<id>/<relatedResource>[?query...]`
 
 Get all related items of a given type for a specific item in a collection.
+
+Supports:
+
+- **sort**=name,-create_at // - will sort desc, otherwise asc
+- **limit**=10 // or any specific number
+- **skip**=5 // or any specific number.
 
 #### Responses
 

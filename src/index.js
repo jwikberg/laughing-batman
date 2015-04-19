@@ -37,6 +37,53 @@ app.use(function (req, res, next) {
   next();
 });
 
+app.use(function (req, res, next) {
+
+  var sort = createSortJSON(req);
+  var skip = req.query.skip;
+  var limit = req.query.limit;
+
+  delete req.query.limit;
+  delete req.query.skip;
+
+  req.exp = {'limit': limit, 'skip': skip, 'sort': sort};
+
+  next();
+});
+
+function createSortJSON(req) {
+
+  var sort = req.query.sort;
+
+  if (sort === undefined) {
+    return sort;
+  }
+
+  var sortFieldsArr = sort.split(',');
+  var sortJSONArr= [];
+  for (var i = 0; i < sortFieldsArr.length; i++) {
+   sortJSONArr.push([]);
+   var currentField = sortFieldsArr[i];
+   sortJSONArr[i].push(currentField);
+   if (isDesc(currentField)) {
+
+      sortJSONArr[i][0] = currentField.substring(1);  // If the user used "-" before the field it should be sorted desc
+      sortJSONArr[i].push('desc');                           // and we need to remove the "-".
+    } else {
+
+      sortJSONArr[i].push('asc');
+    }
+  }
+
+  delete req.query.sort;    // We need to remove it from the query.
+
+  return sortJSONArr;
+}
+
+function isDesc(field) {
+  return field.indexOf('-') === 0;
+}
+
 /**
  * GitHub Webhook endpoint
  *
@@ -177,17 +224,25 @@ app.get('/_collection/:resource', function (req, res) {
 });
 
 /**
+ * Possbile to add query parameters
+ *
+ * sort=example,-anotherExample
+ * The minus here means it will be sorted descending.
+ *
+ * skip=10
+ * limit=5
+ *
  * GET /:resource
  */
 app.get('/:resource', function (req, res) {
-  req.collection.find(req.query, function(err, cursor) {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    cursor.stream()
-      .pipe(JSONStream.stringify())
-      .pipe(res);
-  });
+    req.collection.find(req.query, req.exp, function(err, cursor) {
+      if (err) {
+        return res.status(500).send(err);
+      }
+      cursor.stream()
+        .pipe(JSONStream.stringify())
+        .pipe(res);
+    });
 });
 
 /**
@@ -210,7 +265,7 @@ app.get('/:resource/:id', function (req, res) {
 app.get('/:mainResource/:id/:resource', function (req, res) {
   var filter = req.query;
   filter[req.parentField] = req.id;
-  req.collection.find(filter, function(err, cursor) {
+  req.collection.find(filter, req.exp, function(err, cursor) {
     if (err) {
       return res.status(500).send(err);
     }
