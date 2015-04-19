@@ -53,6 +53,7 @@ Supports:
 - **sort**=name,-create_at // - will sort desc, otherwise asc
 - **limit**=10 // or any specific number
 - **skip**=5 // or any specific number.
+
 #### Responses
 
 `200` - An array with all, or no, items in the `<resource>` collection, optionally filtered by provided query parameters.
