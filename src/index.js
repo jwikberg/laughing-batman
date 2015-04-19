@@ -15,6 +15,7 @@ var githubWebhookMiddleware = require('github-webhook-middleware')({
 });
 var schema = require('./schema');
 var pkg = require('../package');
+var mongoQueries = require('./MongoQueries');
 var MongoClient = mongodb.MongoClient;
 var port = process.env.PORT || 3232;
 var app = express();
@@ -38,51 +39,9 @@ app.use(function (req, res, next) {
 });
 
 app.use(function (req, res, next) {
-
-  var sort = createSortJSON(req);
-  var skip = req.query.skip;
-  var limit = req.query.limit;
-
-  delete req.query.limit;
-  delete req.query.skip;
-
-  req.exp = {'limit': limit, 'skip': skip, 'sort': sort};
-
+  req.exp = mongoQueries.queryToMongoExpressions(req);
   next();
 });
-
-function createSortJSON(req) {
-
-  var sort = req.query.sort;
-
-  if (sort === undefined) {
-    return sort;
-  }
-
-  var sortFieldsArr = sort.split(',');
-  var sortJSONArr= [];
-  for (var i = 0; i < sortFieldsArr.length; i++) {
-   sortJSONArr.push([]);
-   var currentField = sortFieldsArr[i];
-   sortJSONArr[i].push(currentField);
-   if (isDesc(currentField)) {
-
-      sortJSONArr[i][0] = currentField.substring(1);  // If the user used "-" before the field it should be sorted desc
-      sortJSONArr[i].push('desc');                           // and we need to remove the "-".
-    } else {
-
-      sortJSONArr[i].push('asc');
-    }
-  }
-
-  delete req.query.sort;    // We need to remove it from the query.
-
-  return sortJSONArr;
-}
-
-function isDesc(field) {
-  return field.indexOf('-') === 0;
-}
 
 /**
  * GitHub Webhook endpoint
