@@ -43,6 +43,37 @@ Can and should be used as a GitHub push webhook to automatically add a repo to t
 
 `500` - Something went wrong when querying the database.
 
+### `POST /_indices/<resource>`
+
+Adds indice/s to your resource.
+
+Expects the indices to be added in the body:
+
+    field: 1
+    field2: -1 
+
+1 means asc and -1 desc.
+
+**Be aware that this uses alot of extra memory, use only when you know what you are doing.**
+
+#### Responses
+
+`201` - The indice/s was added to the `<resource>`.
+
+`400` - The JSON body was omitted when the request was made.
+
+`500` - Something went wrong when querying the database.
+
+### `DELETE /_indices/<resource>`
+
+Will remove all indices on specified resource.
+
+#### Responses
+
+`204` - The indices were removed from the `<resource>` collection.
+
+`500` - Something went wrong when querying the database. Indices are not removed.
+
 
 ### `GET /<resource>[?query...]`
 

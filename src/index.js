@@ -125,6 +125,47 @@ app.param('id', function (req, res, next, id) {
   next();
 });
 
+
+/**
+ * Add indices to specified resource.
+ *
+ * POST  /_indices/:resource
+ */
+app.post('/_indices/:resource', function(req, res) {
+  if (!req.body) {
+    return res.status(400).send();
+  }
+  try {
+    req.collection.ensureIndex(req.body, function(err, index) {
+      if (err) {
+        return res.status(500).send(err);
+      }
+      return res.sendStatus(201);
+    });
+  } catch (e) {
+    return res.status(400).send({
+        error: true,
+        message: 'Indice object >' + req.body + '< is not correct, please lookup documentation.'
+    });
+  }
+});
+
+/**
+ * Deletes all indices on specified resource.
+ *
+ * DELETE /_indices/:resource
+ */
+app.delete('/_indices/:resource', function(req, res) {
+
+  req.collection.dropIndexes(function(err) {
+    if (err) {
+      return res.status(500).send(err);
+    }
+
+    return res.sendStatus(204);
+  });
+});
+
 /**
  * GET /_collection
  */
