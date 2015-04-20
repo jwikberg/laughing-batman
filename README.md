@@ -45,7 +45,7 @@ Can and should be used as a GitHub push webhook to automatically add a repo to t
 
 ### `POST /_indices/<resource>`
 
-Adds indice/s to your resource.
+Adds indice/s to `<resource>`.
 
 Expects the indices to be added in the body:
 
@@ -66,7 +66,7 @@ Expects the indices to be added in the body:
 
 ### `DELETE /_indices/<resource>`
 
-Will remove all indices on specified resource.
+Will remove all indices on `<resource>`.
 
 #### Responses
 
@@ -77,7 +77,7 @@ Will remove all indices on specified resource.
 
 ### `GET /<resource>[?query...]`
 
-Get all items of a given resource.
+Get all items of a given `<resource>`.
 
 Supports:
 
