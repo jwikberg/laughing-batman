@@ -15,6 +15,7 @@ var githubWebhookMiddleware = require('github-webhook-middleware')({
 });
 var schema = require('./schema');
 var pkg = require('../package');
+var mongoQueries = require('./MongoQueries');
 var MongoClient = mongodb.MongoClient;
 var port = process.env.PORT || 3232;
 var app = express();
@@ -34,6 +35,11 @@ app.use(function (req, res, next) {
   res.type('json');
   // Attach database to request:
   req.db = db;
+  next();
+});
+
+app.use(function (req, res, next) {
+  req.exp = mongoQueries.queryToMongoExpressions(req);
   next();
 });
 
@@ -119,6 +125,47 @@ app.param('id', function (req, res, next, id) {
   next();
 });
 
+
+/**
+ * Add indices to specified resource.
+ *
+ * POST  /_indices/:resource
+ */
+app.post('/_indices/:resource', function(req, res) {
+  if (!req.body) {
+    return res.status(400).send();
+  }
+  try {
+    req.collection.ensureIndex(req.body, function(err, index) {
+      if (err) {
+        return res.status(500).send(err);
+      }
+      return res.sendStatus(201);
+    });
+  } catch (e) {
+    return res.status(400).send({
+        error: true,
+        message: 'Indice object >' + req.body + '< is not correct, please lookup documentation.'
+    });
+  }
+});
+
+/**
+ * Deletes all indices on specified resource.
+ *
+ * DELETE /_indices/:resource
+ */
+app.delete('/_indices/:resource', function(req, res) {
+
+  req.collection.dropIndexes(function(err) {
+    if (err) {
+      return res.status(500).send(err);
+    }
+
+    return res.sendStatus(204);
+  });
+});
+
 /**
  * GET /_collection
  */
@@ -177,17 +224,25 @@ app.get('/_collection/:resource', function (req, res) {
 });
 
 /**
+ * Possbile to add query parameters
+ *
+ * sort=example,-anotherExample
+ * The minus here means it will be sorted descending.
+ *
+ * skip=10
+ * limit=5
+ *
  * GET /:resource
  */
 app.get('/:resource', function (req, res) {
-  req.collection.find(req.query, function(err, cursor) {
-    if (err) {
-      return res.status(500).send(err);
-    }
-    cursor.stream()
-      .pipe(JSONStream.stringify())
-      .pipe(res);
-  });
+    req.collection.find(req.query, req.exp, function(err, cursor) {
+      if (err) {
+        return res.status(500).send(err);
+      }
+      cursor.stream()
+        .pipe(JSONStream.stringify())
+        .pipe(res);
+    });
 });
 
 /**
@@ -210,7 +265,7 @@ app.get('/:resource/:id', function (req, res) {
 app.get('/:mainResource/:id/:resource', function (req, res) {
   var filter = req.query;
   filter[req.parentField] = req.id;
-  req.collection.find(filter, function(err, cursor) {
+  req.collection.find(filter, req.exp, function(err, cursor) {
     if (err) {
       return res.status(500).send(err);
     }

@@ -43,10 +43,47 @@ Can and should be used as a GitHub push webhook to automatically add a repo to t
 
 `500` - Something went wrong when querying the database.
 
+### `POST /_indices/<resource>`
+
+Adds indice/s to `<resource>`.
+
+Expects the indices to be added in the body:
+
+    field: 1
+    field2: -1 
+
+1 means asc and -1 desc.
+
+**Be aware that this uses alot of extra memory, use only when you know what you are doing.**
+
+#### Responses
+
+`201` - The indice/s was added to the `<resource>`.
+
+`400` - The JSON body was omitted when the request was made.
+
+`500` - Something went wrong when querying the database.
+
+### `DELETE /_indices/<resource>`
+
+Will remove all indices on `<resource>`.
+
+#### Responses
+
+`204` - The indices were removed from the `<resource>` collection.
+
+`500` - Something went wrong when querying the database. Indices are not removed.
+
 
 ### `GET /<resource>[?query...]`
 
-Get all items of a given resource.
+Get all items of a given `<resource>`.
+
+Supports:
+
+- **sort**=name,-create_at // - will sort desc, otherwise asc
+- **limit**=10 // or any specific number
+- **skip**=5 // or any specific number.
 
 #### Responses
 
@@ -110,6 +147,12 @@ Delete a specific item by id in a resource collection.
 ### `GET /<resource>/<id>/<relatedResource>[?query...]`
 
 Get all related items of a given type for a specific item in a collection.
+
+Supports:
+
+- **sort**=name,-create_at // - will sort desc, otherwise asc
+- **limit**=10 // or any specific number
+- **skip**=5 // or any specific number.
 
 #### Responses
 
