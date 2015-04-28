@@ -1,4 +1,4 @@
-FROM dockerfile/nodejs
+FROM library/nodejs
 
 RUN npm install -g pm2
 
