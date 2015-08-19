@@ -11,17 +11,18 @@ var bodyParser = require('body-parser');
 var compression = require('compression');
 var methodOverride = require('method-override');
 var githubWebhookMiddleware = require('github-webhook-middleware')({
-  secret: process.env.GITHUB_SECRET
+  secret: 'process.env.GITHUB_SECRET'
 });
 var schema = require('./schema');
 var pkg = require('../package');
 var mongoQueries = require('./MongoQueries');
 var MongoClient = mongodb.MongoClient;
-var port = process.env.PORT || 3232;
+var port = process.env.PORT || 3233;
 var app = express();
 var dbHost = process.env.MONGO_HOST || 'localhost';
 var dbName = 'inhouse';
 var db;
+var fs   = require('fs-extra');
 
 app.use(methodOverride());
 app.use(morgan('combined'));
@@ -87,6 +88,92 @@ app.post('/_hook/:endpoint?', githubWebhookMiddleware, function (req, res) {
     });
   });
 });
+
+var formidable = require('formidable'),
+    http = require('http'),
+    util = require('util');
+
+/**
+ * POST /:resource
+ */
+app.post('/:resource', function (req, res) {
+  var form = new formidable.IncomingForm();
+  form.parse(req, function(err, fields, files) {
+    res.write('received upload:\n\n');
+    util.inspect({fields: fields, files: files});
+  });
+
+  form.on('file', function(name, file) {
+    console.log('kangaroo', file);
+  //  console.log(this.openedFiles[0].path, this.openedFiles[0].path);
+    fs.readFile(this.openedFiles[0].path, function(err, imageData) {
+      if (err) {
+        res.end("Error reading your file on the server!");
+      }else{
+        //when saving an object with an image's byte array
+        var imageBson = {};
+        imageBson.image = new req.db.bson_serializer.Binary(imageData);
+        imageBson.imageType = file.type;
+        req.collection = req.db.collection(req.resource);
+        req.collection.insert(imageBson, {safe: true},function(err, bsonData) {
+          if (err) {
+            res.end({ msg:'Error saving your file to the database!' });
+          } else {
+            console.log('det gick bra');
+          }
+        });
+      }
+    });
+  });
+  return res.sendStatus(200);
+});
+
+app.get('/:resource/:id', function (req, res) {
+  console.log('IIIIDDDD', req.params.id);
+    req.collection.find(req.query, req.exp, function(err, cursor) {
+      if (err) {
+        return res.status(500).send(err);
+      }
+
+      var items;
+      var first = true;
+
+        cursor.each(function(err, item) {
+         items = item;
+         if (first) {
+          items =  new req.db.bson_deserializer.Binary(item);
+          res.set('Content-Type', 'image/jpeg');
+          res.send(item.image.buffer);
+          first = false;
+         }
+      });
+
+     /* if (req.params.id === '123456456125') {
+        cursor.each(function(err, item) {
+         items = item;
+         if (first && item && item._id.equals('55cdacc1f425f1c35fddaf64')) {
+          console.log('LLLL');
+          items =  new req.db.bson_deserializer.Binary(item);
+          res.set('Content-Type', 'image/jpeg');
+          res.send(item.image.buffer);
+          first = false;
+         }
+      });
+      } else {
+        cursor.each(function(err, item) {
+         items = item;
+         if (first) {
+          console.log('LLLL');
+          items =  new req.db.bson_deserializer.Binary(item);
+          res.set('Content-Type', 'image/jpeg');
+          res.send(item.image.buffer);
+          first = false;
+         }
+      });
+      } */
+    });
+});
+
 
 app.use(bodyParser.json());
 
