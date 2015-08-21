@@ -13,7 +13,7 @@ var methodOverride = require('method-override');
 var gridform = require('gridform');
 var gfs = gridform.gridfsStream;
 var githubWebhookMiddleware = require('github-webhook-middleware')({
-  secret: 'process.env.GITHUB_SECRET'
+  secret: process.env.GITHUB_SECRET
 });
 var schema = require('./schema');
 var pkg = require('../package');
