@@ -223,7 +223,7 @@ app.post('/_indices/:resource', function(req, res) {
     return res.status(400).send();
   }
   try {
-    req.collection.ensureIndex(req.body, function(err, index) {
+    req.collection.ensureIndex(req.body, req.query, function(err, index) {
       if (err) {
         return res.status(500).send(err);
       }
