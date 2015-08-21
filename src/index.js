@@ -10,8 +10,10 @@ var JSONStream = require('JSONStream');
 var bodyParser = require('body-parser');
 var compression = require('compression');
 var methodOverride = require('method-override');
+var gridform = require('gridform');
+var gfs = gridform.gridfsStream;
 var githubWebhookMiddleware = require('github-webhook-middleware')({
-  secret: process.env.GITHUB_SECRET
+  secret: 'process.env.GITHUB_SECRET'
 });
 var schema = require('./schema');
 var pkg = require('../package');
@@ -87,6 +89,40 @@ app.post('/_hook/:endpoint?', githubWebhookMiddleware, function (req, res) {
     });
   });
 });
+
+/**
+ * POST /upload
+ * Handles file storage
+ */
+app.post('/upload', function (req, res) {
+  var form = gridform();
+  form.parse(req, function(err, fields, files) {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    return res.status(200).send(files.upload.id);
+
+  });
+});
+
+/**
+ * POST /upload/:id
+ * Handles file storage retrieval
+ */
+app.get('/upload/:name', function (req, res) {
+  var stream = gfs.createReadStream({
+    filename: req.params.name
+  });
+
+  //error handling, e.g. file does not exist
+  stream.on('error', function (err) {
+    res.status(400).send(err);
+  });
+
+  res.set('Content-Type', 'image/png')
+  stream.pipe(res);
+});
+
 
 app.use(bodyParser.json());
 
@@ -353,6 +389,9 @@ MongoClient.connect('mongodb://' + dbHost + '/' + dbName, function (err, databas
     throw err;
   }
   db = database;
+  gridform.db = db;
+  gridform.mongo = mongodb;
+  gfs = gridform.gridfsStream(db, mongodb);
 
   app.listen(port, function () {
     var now = new Date().toString();
