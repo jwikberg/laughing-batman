@@ -21,7 +21,7 @@ module.exports = {
 
    }
 
-}
+};
 
 var createSortJSON = function(req) {
 
@@ -50,9 +50,9 @@ var createSortJSON = function(req) {
   delete req.query.sort;    // We need to remove it from the query.
 
   return sortJSONArr;
-}
+};
 
 
 var isDesc = function(field) {
   return field.indexOf('-') === 0;
-}
+};

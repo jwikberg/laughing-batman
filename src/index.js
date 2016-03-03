@@ -119,7 +119,7 @@ app.get('/upload/:name', function (req, res) {
     res.status(400).send(err);
   });
 
-  res.set('Content-Type', 'image/png')
+  res.set('Content-Type', 'image/png');
   stream.pipe(res);
 });
 
