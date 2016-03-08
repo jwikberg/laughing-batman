@@ -15,7 +15,7 @@ var gridform = require('gridform');
 var config = require('config');
 var gfs = gridform.gridfsStream;
 var githubWebhookMiddleware = require('github-webhook-middleware')({
-  secret: 'process.env.GITHUB_SECRET'
+  secret: process.env.GITHUB_SECRET
 });
 var bitbucketWebhookMiddleware = require('./bitbucketWebhookMiddleware');
 var schema = require('./schema');
