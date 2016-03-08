@@ -1,0 +1,13 @@
+{
+    "repositories": {
+
+/*      Example repo to add.
+ *      Note that each repo needs to have ssh keys set up in the builder module
+ *
+ *      "user/repo" : {  ex john/doe.git
+ *          "clone_url" : "git@bitbucket.org:john/doe.git"
+ *      }
+ */
+
+    }
+}
