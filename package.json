@@ -18,11 +18,18 @@
     "express"
   ],
   "author": "Joakim Carlstein <joakim.carlstein@softhouse.se>",
+  "contributors": [
+    {
+      "name": "Rasmus Letterkrantz",
+      "email": "rasmus.xx.letterkrantz@softhouse.se"
+    }
+  ],
   "license": "MIT",
   "dependencies": {
     "JSONStream": "^0.10.0",
     "body-parser": "^1.11.0",
     "compression": "^1.4.0",
+    "config": "^1.19.0",
     "cors": "^2.5.3",
     "express": "^4.11.2",
     "github-webhook-middleware": "0.0.2",
