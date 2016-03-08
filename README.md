@@ -29,11 +29,28 @@ You'll now have a dynamic REST API listening on port `3232` (or the port provide
 
 **NOTE** `<resource>` and `<relatedResource>` below should be a resource name in singular and dasherized, e.g. "user" or "continuous-integration". `<id>` should be a 24 character long hexadecimal string, i.e. a MongoDB ObjectID string.
 
-### `POST /_hook/<endpoint>`
+### `POST /_hook/github/<endpoint>`
 
 Can and should be used as a GitHub push webhook to automatically add a repo to the build queue used by [flaming-computing-machine](https://github.com/Softhouse/flaming-computing-machine).
 
 **NOTE** Your repo *must* have a `Dockerfile` in its root folder! Also it listens only for `master` branch pushes.
+
+#### Responses
+
+`201` - The repo was added to the build queue
+
+`204` - Push received but ignored (e.g. push to other branch than `master`)
+
+`500` - Something went wrong when querying the database.
+
+
+### `POST /_hook/bitbucket/<endpoint>`
+
+Can and should be used as a BitBucket push webhook to automatically add a repo to the build queue used by [flaming-computing-machine](https://github.com/Softhouse/flaming-computing-machine).
+
+**NOTE** Your repo *must* have a `Dockerfile` in its root folder! Also it listens only for `master` branch pushes.
+
+**NOTE** All of the private repositories needs to exist in the config/default.json file; see the actual file for an example. Further, [flaming-computing-machine](https://github.com/Softhouse/flaming-computing-machine) needs to have the ssh keys set up to match these repositories; [flaming-computing-machine](https://github.com/Softhouse/flaming-computing-machine) has a description on how to set this up.
 
 #### Responses
 
@@ -50,7 +67,7 @@ Adds indice/s to `<resource>`.
 Expects the indices to be added in the body:
 
     field: 1
-    field2: -1 
+    field2: -1
 
 1 means asc and -1 desc.
 
