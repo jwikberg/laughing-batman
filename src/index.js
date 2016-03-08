@@ -1,4 +1,5 @@
 'use strict';
+
 var _ = require('lodash');
 var str = require('underscore.string');
 var cors = require('cors');
@@ -11,10 +12,12 @@ var bodyParser = require('body-parser');
 var compression = require('compression');
 var methodOverride = require('method-override');
 var gridform = require('gridform');
+var config = require('config');
 var gfs = gridform.gridfsStream;
 var githubWebhookMiddleware = require('github-webhook-middleware')({
-  secret: process.env.GITHUB_SECRET
+  secret: 'process.env.GITHUB_SECRET'
 });
+var bitbucketWebhookMiddleware = require('./bitbucketWebhookMiddleware');
 var schema = require('./schema');
 var pkg = require('../package');
 var mongoQueries = require('./MongoQueries');
@@ -46,13 +49,49 @@ app.use(function (req, res, next) {
 });
 
 /**
+ * POST /upload
+ * Handles file storage
+ */
+app.post('/upload', function (req, res) {
+  var form = gridform();
+  form.parse(req, function(err, fields, files) {
+    if (err) {
+      return res.status(500).send(err);
+    }
+    return res.status(200).send(files.upload.id);
+
+  });
+});
+
+/**
+ * POST /upload/:id
+ * Handles file storage retrieval
+ */
+app.get('/upload/:name', function (req, res) {
+  var stream = gfs.createReadStream({
+    filename: req.params.name
+  });
+
+  //error handling, e.g. file does not exist
+  stream.on('error', function (err) {
+    res.status(400).send(err);
+  });
+
+  res.set('Content-Type', 'image/png')
+  stream.pipe(res);
+});
+
+// Activate body parser for remaining routes
+app.use(bodyParser.json());
+
+/**
  * GitHub Webhook endpoint
  *
  * Adds incoming repo to build queue
  *
- * POST /_hook/:endpoint
+ * POST /_hook/github/:endpoint
  */
-app.post('/_hook/:endpoint?', githubWebhookMiddleware, function (req, res) {
+app.post('/_hook/github/:endpoint?', githubWebhookMiddleware, function (req, res) {
   var hooks = req.db.collection('_hook');
   var buildqueue = req.db.collection('buildqueue');
 
@@ -91,40 +130,54 @@ app.post('/_hook/:endpoint?', githubWebhookMiddleware, function (req, res) {
 });
 
 /**
- * POST /upload
- * Handles file storage
+ * BitBucket Webhook endpoint
+ *
+ * Adds incoming repo to build queue
+ *
+ * POST /_hook/bitbucket/:endpoint
  */
-app.post('/upload', function (req, res) {
-  var form = gridform();
-  form.parse(req, function(err, fields, files) {
+app.post('/_hook/bitbucket/:endpoint?', bitbucketWebhookMiddleware, function (req, res) {
+  var hooks = req.db.collection('_hook');
+  var buildqueue = req.db.collection('buildqueue');
+  hooks.insert(req.body, function(err) {
     if (err) {
       return res.status(500).send(err);
     }
-    return res.status(200).send(files.upload.id);
+    if (!req.body.push) {
+      // Skipping hook if no ref was found (it's maybe a ping)
+      return res.sendStatus(204);
+    }
+    if (!req.body.push.changes.length || req.body.push.changes[0]['new'].name !== 'master') {
+      // Skipping hook if it's a push for something else than the master branch
+      return res.sendStatus(204);
+    }
+    if(!config.repositories[req.body.repository.full_name]) {
+      return res.sendStatus(500).send(new Error('No matching repository in the config'));
+    }
 
+    var push = req.body.push.changes[0]; //look at the latest
+    var build = {
+      fullName: req.body.repository.full_name,
+      name: req.body.repository.name,
+      repo: config.repositories[req.body.repository.full_name].clone_url,
+      commit: !!push.commits.length,
+      endpoint: req.params.endpoint,
+      createdAt: new Date(),
+      buildAt: null,
+      nrOfAttempts: 0,
+      isSuccessful: false,
+      message: null,
+      pusher: req.body.actor
+    };
+
+    buildqueue.insert(build, function (err) {
+      if (err) {
+        return res.status(500).send(err);
+      }
+      return res.sendStatus(201);
+    });
   });
 });
-
-/**
- * POST /upload/:id
- * Handles file storage retrieval
- */
-app.get('/upload/:name', function (req, res) {
-  var stream = gfs.createReadStream({
-    filename: req.params.name
-  });
-
-  //error handling, e.g. file does not exist
-  stream.on('error', function (err) {
-    res.status(400).send(err);
-  });
-
-  res.set('Content-Type', 'image/png');
-  stream.pipe(res);
-});
-
-
-app.use(bodyParser.json());
 
 /**
  * Attach current resource name and collection to the request
@@ -160,7 +213,6 @@ app.param('id', function (req, res, next, id) {
   }
   next();
 });
-
 
 /**
  * Add indices to specified resource.
@@ -382,7 +434,6 @@ app.delete('/:resource/:id', function (req, res) {
     res.sendStatus(204);
   });
 });
-
 
 MongoClient.connect('mongodb://' + dbHost + '/' + dbName, function (err, database) {
   if (err) {
