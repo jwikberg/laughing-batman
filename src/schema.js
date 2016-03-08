@@ -31,7 +31,7 @@ function objToSchema (obj) {
 }
 
 function getType (val) {
-  if (val === null) {
+  if (val == null) {
     return null;
   }
   if (val instanceof ObjectID) {

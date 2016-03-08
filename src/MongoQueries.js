@@ -8,20 +8,20 @@
 
 module.exports = {
 
-   queryToMongoExpressions :function (req) {
+  queryToMongoExpressions :function (req) {
 
-       var sort = createSortJSON(req);
-       var skip = req.query.skip;
-       var limit = req.query.limit;
+    var sort = createSortJSON(req);
+    var skip = req.query.skip;
+    var limit = req.query.limit;
 
-       delete req.query.limit;
-       delete req.query.skip;
+    delete req.query.limit;
+    delete req.query.skip;
 
-       return {'limit': limit, 'skip': skip, 'sort': sort};
+    return {'limit': limit, 'skip': skip, 'sort': sort};
 
-   }
+ }
 
-};
+}
 
 var createSortJSON = function(req) {
 
@@ -50,9 +50,9 @@ var createSortJSON = function(req) {
   delete req.query.sort;    // We need to remove it from the query.
 
   return sortJSONArr;
-};
+}
 
 
 var isDesc = function(field) {
   return field.indexOf('-') === 0;
-};
+}
