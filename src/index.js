@@ -152,7 +152,7 @@ app.post('/_hook/bitbucket/:endpoint?', bitbucketWebhookMiddleware, function (re
       return res.sendStatus(204);
     }
     if(!config.repositories[req.body.repository.full_name]) {
-      return res.sendStatus(500).send(new Error('No matching repository in the config'));
+      return res.status(500).send(new Error('No matching repository in the config'));
     }
 
     var push = req.body.push.changes[0]; //look at the latest
