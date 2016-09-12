@@ -323,6 +323,7 @@ app.get('/_collection/:resource', function (req, res) {
  * GET /:resource
  */
 app.get('/:resource', function (req, res) {
+    res.charset = 'utf-8';
     req.collection.find(req.query, req.exp, function(err, cursor) {
       if (err) {
         return res.status(500).send(err);
@@ -337,6 +338,7 @@ app.get('/:resource', function (req, res) {
  * GET /:resource/:id
  */
 app.get('/:resource/:id', function (req, res) {
+  res.charset = 'utf-8';
   req.collection.findOne({_id: req.id}, function(err, doc) {
     if (err) {
       return res.status(500).send(err);
@@ -351,6 +353,7 @@ app.get('/:resource/:id', function (req, res) {
  * GET /:mainResource/:id/:resource
  */
 app.get('/:mainResource/:id/:resource', function (req, res) {
+  res.charset = 'utf-8';
   var filter = req.query;
   filter[req.parentField] = req.id;
   req.collection.find(filter, req.exp, function(err, cursor) {
